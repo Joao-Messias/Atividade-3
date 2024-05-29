@@ -1,32 +1,31 @@
-import {Controller, Post, Body, InternalServerErrorException, Inject} from '@nestjs/common';
-import {ProductClient} from './client/ProductClient';
-
+import { Controller, Post, Body, InternalServerErrorException } from '@nestjs/common';
+import { ProductClient } from './client/ProductClient';
 
 @Controller('api')
 export class AppController {
-    // Injeção da instância do ProductClient.
-    constructor(@Inject(ProductClient) private readonly productClient: ProductClient) {
+    private productClient: ProductClient;
+
+    constructor() {
+        this.productClient = ProductClient.getInstance();
     }
 
-    // Método "core" da Atividade, que consiste em autenticar o usuario, inserir produtos e retornar a lista atualizada.
     @Post('products')
     public async insertProducts(@Body() body: { user: string; password: string; products: any[] }): Promise<any> {
         try {
-            // Extrai os dados da requisição.
-            const {user, password, products} = body;
+            const { user, password, products } = body;
 
-            // Autentica o usuário utilizando o ProductClient.
+            // Autenticar o usuário
             await this.productClient.authenticationProcess(user, password);
 
-            // Insere os produtos na API utilizando o ProductClient.
-            await this.productClient.insertProducts(products);
+            // Inserir os produtos
+            const insertResponse = await this.productClient.insertProducts(products);
 
-            // Recupera a lista atualizada de produtos da API.
+            // Recuperar a lista de produtos
             const productsData = await this.productClient.products();
 
-            // Retorna a lista de produtos como resposta.
             return productsData.data;
         } catch (error) {
+            console.log('Error inserting products:', error);
             throw new InternalServerErrorException('Erro ao inserir produtos.');
         }
     }
